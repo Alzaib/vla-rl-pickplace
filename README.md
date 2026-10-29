@@ -5,16 +5,12 @@ behavior cloning (BC) and then fine-tuned with reinforcement learning (RL) using
 Everything is plain Python + NumPy + PyTorch. No Isaac Sim, Unity, Omniverse, ROS, Gazebo or MuJoCo.
 
 > ## ⚠️ This project was made with AI
-> **The code, the experiments' design, the debugging and this README were written with AI assistance** (Claude, by Anthropic), through a long
-> back-and-forth conversation. The repository owner set the goals, decided what to try next, collected the human demonstrations, ran every
-> training job on their own machine and supplied the logs; the AI wrote and revised the code and explanations.
->
 > What that means for you:
 > * Treat this as a **learning project, not a reference implementation.** Expect rough edges and some leftover legacy scripts.
 > * The AI had **no PyTorch in its own sandbox**, so the PyTorch parts (training loops, PPO/GRPO updates, the viewer) were only syntax-checked
 >   there and were actually exercised on the owner's GPU. The NumPy parts (simulator, data, rollouts, advantage maths) were tested directly.
 > * Interpretations of *why* things happened (see "What we learned") are **hypotheses**, not proven results.
-> * Numbers come from the logs in [`logs/`](logs/). They are single runs with a single seed on a few hundred scenes, so small differences are noise.
+
 
 ## Goal
 
