@@ -1,0 +1,6 @@
+# PyTorch is installed separately (see README, "Setup") so that you get the CUDA build that matches your GPU driver.
+numpy
+matplotlib
+pillow
+# only needed if matplotlib has no interactive window backend (human_collect.py, watch_*.py):
+# pyqt5

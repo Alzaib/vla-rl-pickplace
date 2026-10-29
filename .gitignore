@@ -1,0 +1,15 @@
+# environments / caches
+vla-env/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# data and weights are big and reproducible - regenerate with the commands in the README
+*.npz
+*.pt
+*.pth
+
+# outputs
+gifs/
+*.gif
