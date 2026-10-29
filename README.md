@@ -2,15 +2,14 @@
 
 A small, CPU/laptop-GPU-friendly **2D pick-and-place simulator** plus a **tiny Vision-Language-Action (VLA) model**, trained first with
 behavior cloning (BC) and then fine-tuned with reinforcement learning (RL) using a **binary success reward**.
-Everything is plain Python + NumPy + PyTorch. No Isaac Sim, Unity, Omniverse, ROS, Gazebo or MuJoCo.
+Everything is implemented Python + NumPy + PyTorch. 
 
 > ## ⚠️ This project was made with AI
+> **The code, the experiments' design, the debugging and this README were written with AI assistance** (Claude).
+>
 > What that means for you:
 > * Treat this as a **learning project, not a reference implementation.** Expect rough edges and some leftover legacy scripts.
-> * The AI had **no PyTorch in its own sandbox**, so the PyTorch parts (training loops, PPO/GRPO updates, the viewer) were only syntax-checked
->   there and were actually exercised on the owner's GPU. The NumPy parts (simulator, data, rollouts, advantage maths) were tested directly.
 > * Interpretations of *why* things happened (see "What we learned") are **hypotheses**, not proven results.
-
 
 ## Goal
 
@@ -33,6 +32,25 @@ It is **not** an attempt to reproduce that paper's numbers, and the toy results 
 * **Success** = the named block is released inside the named region.
 * A scripted **expert** (shortest-path planner) provides ground-truth actions; it is also what generates the training data.
 * **Reward for RL:** 1 if and only if the episode succeeds, otherwise 0. No shaping, no step cost, no collision penalty.
+
+## Demo GIFs
+
+Generated with `python make_gifs.py` (see "Running it"). Each frame is captioned with the policy, scene, instruction, step, action and result.
+By default every GIF gets its own scene (`--scene-mode distinct`); `python make_gifs.py --scene 2000005` instead shows all policies on one
+scene so you can compare them directly (outcomes are then whatever the policies do).
+They illustrate behaviour and are not a statistical comparison; see the results table for numbers.
+
+| Scripted expert (success) | BC model, argmax (success) |
+|:---:|:---:|
+| <img src="gifs_demo/1_expert.gif" width="360"> | <img src="gifs_demo/2_bc_success.gif" width="360"> |
+
+| BC + RL, **sampled** actions: success | BC + RL, **sampled** actions: failure |
+|:---:|:---:|
+| <img src="gifs_demo/3_rl_sampled_success.gif" width="360"> | <img src="gifs_demo/3_rl_sampled_fail.gif" width="360"> |
+
+| BC + RL, **argmax** actions: success | BC + RL, **argmax** actions: failure |
+|:---:|:---:|
+| <img src="gifs_demo/4_rl_argmax_success.gif" width="360"> | <img src="gifs_demo/4_rl_argmax_fail.gif" width="360"> |
 
 ## How the tiny model maps onto a real VLA
 
@@ -74,8 +92,6 @@ Data: 1000 scripted-expert training episodes (14,592 rows). "Sampled" = actions 
 | + PPO with a learned critic, 100 iters (`rl_train_chunk.py`) | 100 new | 0.88 | 0.62 |
 | + GRPO-style RL, 60 iters (`rl_grpo_chunk.py`), eval during training | 200 eval | **0.885** | **0.405** |
 | + GRPO-style RL, final test of best checkpoint | 200 new | 0.92 | 0.38 |
-
-Full logs: [`logs/bc_chunk_K4_H0.txt`](logs/bc_chunk_K4_H0.txt), [`logs/rl_ppo_critic_100iters.txt`](logs/rl_ppo_critic_100iters.txt), [`logs/rl_grpo_60iters.txt`](logs/rl_grpo_60iters.txt).
 
 **Reproduction check.** Re-running the BC step (3 below) on the dataset from step 1 gave the same picture (replan-every-step 0.71 argmax / 0.88 sampled;
 open-loop-4 0.77 / 0.86; with 100% cell-level grounding accuracy), so the BC pipeline reproduces. It also shows the run-to-run noise: the
@@ -160,6 +176,9 @@ python watch_policy.py --ckpt g0_chunk.pt                       # the BC model, 
 python watch_policy.py --ckpt vla_grpo_chunk_best.pt --only-fail --episodes 5
 python watch_policy.py --ckpt vla_grpo_chunk_best.pt --gif-dir gifs --no-window --episodes 20
 
+# --- 5b. captioned demo GIFs: expert, BC success, RL (sampled / argmax) success + failure -> gifs_demo/
+python make_gifs.py --bc-ckpt g0_chunk.pt --rl-ckpt vla_grpo_chunk_best.pt
+
 # --- 6. (not yet run) DAgger: let the model drive, let the expert label the states it reaches, retrain
 python dagger_chunk.py --policy g0_chunk.pt --episodes 300 --beta 0.3 --out dagger_c1.npz
 python train_chunk.py --data expert_data.npz --extra dagger_c1.npz --K 4 --H 0 --epochs 30 --best-path g0_dag1.pt
@@ -205,6 +224,7 @@ iter  12 | eps 2304 | train succ 0.54 (fresh scenes 0.74) | mixed scenes 11/24 |
 | `train_chunk.py` | **Behavior-cloning training and closed-loop evaluation** of the chunking model (replan1 / open-loop / ensemble modes, failure-stage trace) |
 | `rl_grpo_chunk.py` | **Current RL script:** binary success reward, group-relative advantages, dynamic sampling, hard-scene replay, clip-higher, KL on the other chunk steps |
 | `watch_policy.py` | Watch a trained checkpoint act in the simulator (live window or GIFs) |
+| `make_gifs.py` | Renders captioned demo GIFs: expert, BC success, and RL success/failure with sampled and argmax actions |
 | `human_collect.py`, `watch_data.py` | Keyboard demo collector; replay/watch the expert or a stored dataset |
 | `dagger_chunk.py` | DAgger collector for the chunking model (written, not yet run) |
 | `rl_train_chunk.py`, `chunk_vec_env.py` | Earlier PPO + critic RL for the chunking model (no measurable gain); its vectorised environment |
